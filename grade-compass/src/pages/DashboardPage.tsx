@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import { useCourses } from '../contexts/CourseContext';
 import Card from '../components/Card';
+import GradeChart from '../components/GradeChart';
+import GradeSummary from '../components/GradeSummary';
 
 const DashboardPage: React.FC = () => {
   const { courses, addCourse } = useCourses();
   const [newCourseName, setNewCourseName] = useState('');
   const [newCourseCredits, setNewCourseCredits] = useState<number | ''>(0);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   const handleAddCourse = (e: React.FormEvent) => {
     e.preventDefault();
@@ -14,6 +17,8 @@ const DashboardPage: React.FC = () => {
       addCourse(newCourseName.trim(), newCourseCredits);
       setNewCourseName('');
       setNewCourseCredits(0);
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 3000); // Hide after 3 seconds
     } else {
       alert('Please enter a valid course name and positive credits.');
     }
@@ -22,6 +27,18 @@ const DashboardPage: React.FC = () => {
   return (
     <Layout>
       <h1 className="text-3xl font-bold text-gray-800 mb-6">Your Courses</h1>
+
+      {showSuccessMessage && (
+        <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+          <p className="font-bold">Success!</p>
+          <p>Course added successfully.</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <GradeSummary courses={courses} />
+        <GradeChart courses={courses} />
+      </div>
 
       <div className="mb-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
         <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Add New Course</h2>
@@ -53,7 +70,7 @@ const DashboardPage: React.FC = () => {
           </div>
           <button
             type="submit"
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out"
           >
             Add Course
           </button>
@@ -62,7 +79,10 @@ const DashboardPage: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {courses.length === 0 ? (
-          <p className="text-gray-600 dark:text-gray-400">No courses added yet. Use the form above to add your first course!</p>
+          <div className="col-span-full text-center py-12 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-md">
+            <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">No courses added yet.</p>
+            <p className="text-gray-500 dark:text-gray-500">Use the form above to add your first course and start tracking your grades!</p>
+          </div>
         ) : (
           courses.map((course) => (
             <Card key={course.id} course={course} />
