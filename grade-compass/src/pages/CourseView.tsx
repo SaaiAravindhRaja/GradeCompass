@@ -12,6 +12,7 @@ const CourseView: React.FC = () => {
   const [newAssessmentName, setNewAssessmentName] = useState('');
   const [newAssessmentWeight, setNewAssessmentWeight] = useState<number | ''>(0);
   const [targetGrade, setTargetGrade] = useState<number | ''>(0);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   const course = courses.find((c) => c.id === courseId);
 
@@ -52,6 +53,8 @@ const CourseView: React.FC = () => {
       addAssessment(course.id, newAssessmentName.trim(), newAssessmentWeight);
       setNewAssessmentName('');
       setNewAssessmentWeight(0);
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 3000); // Hide after 3 seconds
     } else {
       alert('Please enter a valid assessment name and positive weight.');
     }
@@ -77,22 +80,32 @@ const CourseView: React.FC = () => {
         </button>
       </div>
 
+      {showSuccessMessage && (
+        <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+          <p className="font-bold">Success!</p>
+          <p>Assessment added successfully.</p>
+        </div>
+      )}
+
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8">
         <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Assessments</h2>
         {course.assessments.length === 0 ? (
-          <p className="text-gray-600 dark:text-gray-400">No assessments added yet.</p>
+          <div className="col-span-full text-center py-12 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-md">
+            <p className="text-gray-600 dark:text-gray-400 text-lg mb-4">No assessments added yet.</p>
+            <p className="text-gray-500 dark:text-gray-500">Use the form below to add your first assessment!</p>
+          </div>
         ) : (
           <ul className="space-y-4">
             {course.assessments.map((assessment) => (
-              <li key={assessment.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-gray-100 dark:bg-gray-700 rounded-md">
+              <li key={assessment.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 bg-gray-100 dark:bg-gray-700 rounded-md shadow-sm">
                 <div className="mb-2 md:mb-0">
-                  <p className="font-medium text-gray-800 dark:text-gray-100">{assessment.name} ({assessment.weight}%)</p>
-                  <p className="text-gray-600 dark:text-gray-300">Grade: {assessment.grade !== null ? assessment.grade : 'N/A'}</p>
+                  <p className="font-medium text-gray-800 dark:text-gray-100">{assessment.name} (<span className="font-bold">{assessment.weight}%</span>)</p>
+                  <p className="text-gray-600 dark:text-gray-300 text-sm">Grade: {assessment.grade !== null ? assessment.grade : 'N/A'}</p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <input
                     type="number"
-                    className="w-24 shadow appearance-none border rounded py-2 px-3 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:shadow-outline bg-gray-50 dark:bg-gray-600"
+                    className="w-24 shadow appearance-none border rounded py-2 px-3 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:shadow-outline bg-gray-50 dark:bg-gray-600 transition duration-150 ease-in-out"
                     placeholder="Grade"
                     value={assessment.grade !== null ? assessment.grade : ''}
                     onChange={(e) => handleGradeChange(assessment.id, parseFloat(e.target.value))}
@@ -101,7 +114,7 @@ const CourseView: React.FC = () => {
                   />
                   <button
                     onClick={() => handleDeleteAssessment(assessment.id)}
-                    className="bg-red-400 hover:bg-red-600 text-white font-bold py-2 px-3 rounded text-sm"
+                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded text-sm transition duration-150 ease-in-out"
                   >
                     Delete
                   </button>
@@ -143,7 +156,7 @@ const CourseView: React.FC = () => {
           </div>
           <button
             type="submit"
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out"
           >
             Add Assessment
           </button>
