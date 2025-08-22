@@ -1,7 +1,8 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { Course, Assessment } from '../types/models';
-import { loadCourses, saveCourses } from '../services/courseStorage';
+// import { loadCourses, saveCourses } from '../services/courseStorage'; // Commented out for mock data
 import { v4 as uuidv4 } from 'uuid';
+import { mockCourses } from '../data/mockData'; // Import mock data
 
 interface CourseContextType {
   courses: Course[];
@@ -20,15 +21,15 @@ interface CourseProviderProps {
 }
 
 export const CourseProvider: React.FC<CourseProviderProps> = ({ children }) => {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<Course[]>(mockCourses); // Initialize with mock data
 
-  useEffect(() => {
-    setCourses(loadCourses());
-  }, []);
+  // useEffect(() => {
+  //   setCourses(loadCourses());
+  // }, []);
 
-  useEffect(() => {
-    saveCourses(courses);
-  }, [courses]);
+  // useEffect(() => {
+  //   saveCourses(courses);
+  // }, [courses]);
 
   const addCourse = (name: string, credits: number) => {
     const newCourse: Course = {
