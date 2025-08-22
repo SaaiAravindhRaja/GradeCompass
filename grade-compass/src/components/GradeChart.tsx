@@ -1,82 +1,41 @@
 import React from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import type { GradeComponent } from '../types/models';
-import { CHART_COLORS } from '../constants';
+import { Course } from '../types/models';
+import { calculateCourseGrade } from '../utils/gradeCalculator';
 
 interface GradeChartProps {
-  components: GradeComponent[];
+  courses: Course[];
 }
 
 /**
- * Component for visualizing grade breakdown in a pie chart
+ * Component for displaying a summary of course grades
  */
-const GradeChart: React.FC<GradeChartProps> = ({ components }) => {
-  if (components.length === 0) {
+const GradeChart: React.FC<GradeChartProps> = ({ courses }) => {
+  if (courses.length === 0) {
     return (
       <div className="flex items-center justify-center h-64 bg-gray-100 dark:bg-gray-800 rounded-lg">
         <p className="text-gray-500 dark:text-gray-400">
-          No grade components to display
+          No courses to display grades for.
         </p>
       </div>
     );
   }
 
-  // Prepare data for the chart
-  const chartData = components.map(component => ({
-    name: component.name,
-    value: component.weight,
-    isCompleted: component.isCompleted,
-    score: component.score,
-    maxScore: component.maxScore,
-  }));
-
-  // Custom tooltip
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-white dark:bg-gray-800 p-3 shadow-md rounded-md border border-gray-200 dark:border-gray-700">
-          <p className="font-medium">{data.name}</p>
-          <p>Weight: {data.value}%</p>
-          {data.isCompleted ? (
-            <p>Score: {data.score} / {data.maxScore} ({((data.score / data.maxScore) * 100).toFixed(1)}%)</p>
-          ) : (
-            <p>Status: Not completed</p>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
-
   return (
-    <div className="h-64">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={80}
-            paddingAngle={2}
-            dataKey="value"
-            nameKey="name"
-            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-            labelLine={false}
-          >
-            {chartData.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={entry.isCompleted ? CHART_COLORS.COMPLETED : CHART_COLORS.REMAINING}
-                opacity={entry.isCompleted ? 1 : 0.7}
-              />
-            ))}
-          </Pie>
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+      <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Course Grades Overview</h2>
+      <ul className="space-y-2">
+        {courses.map((course) => {
+          const grade = calculateCourseGrade(course);
+          return (
+            <li key={course.id} className="flex justify-between items-center text-gray-700 dark:text-gray-300">
+              <span className="font-medium">{course.name} ({course.code})</span>
+              <span className="text-lg font-bold">
+                {grade !== null ? `${grade.toFixed(2)}%` : 'N/A'}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 };
