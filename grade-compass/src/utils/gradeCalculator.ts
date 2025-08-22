@@ -1,176 +1,71 @@
-import type { GradeComponent } from '../types/models';
+import { Course, Assessment } from '../types/models';
 
-/**
- * Calculate the current weighted grade based on completed components
- * @param components Array of grade components
- * @returns The current weighted grade (0-100) or null if no components are completed
- */
-export const calculateCurrentGrade = (components: GradeComponent[]): number | null => {
-  const completedComponents = components.filter(
-    component => component.isCompleted && component.score !== null
-  );
-  
-  if (completedComponents.length === 0) {
+export const calculateCourseGrade = (course: Course): number | null => {
+  if (!course || !course.assessments || course.assessments.length === 0) {
     return null;
   }
-  
-  const totalWeightedScore = completedComponents.reduce(
-    (sum, component) => sum + ((component.score! / component.maxScore) * component.weight),
-    0
-  );
-  
-  const totalWeight = completedComponents.reduce(
-    (sum, component) => sum + component.weight,
-    0
-  );
-  
-  return totalWeight > 0 ? (totalWeightedScore / totalWeight) * 100 : null;
+
+  let totalWeightedGrade = 0;
+  let totalWeight = 0;
+
+  for (const assessment of course.assessments) {
+    if (assessment.grade !== null && assessment.grade >= 0 && assessment.weight > 0) {
+      totalWeightedGrade += (assessment.grade / 100) * assessment.weight;
+      totalWeight += assessment.weight;
+    }
+  }
+
+  if (totalWeight === 0) {
+    return null; // No graded assessments with valid weights
+  }
+
+  return (totalWeightedGrade / totalWeight) * 100;
 };
 
-/**
- * Calculate the total weight of completed components
- * @param components Array of grade components
- * @returns The total weight of completed components (0-100)
- */
-export const calculateCompletedWeight = (components: GradeComponent[]): number => {
-  return components
-    .filter(component => component.isCompleted)
-    .reduce((sum, component) => sum + component.weight, 0);
+export const calculateRemainingWeight = (course: Course): number => {
+  if (!course || !course.assessments) {
+    return 100;
+  }
+
+  let gradedWeight = 0;
+  for (const assessment of course.assessments) {
+    if (assessment.grade !== null && assessment.grade >= 0 && assessment.weight > 0) {
+      gradedWeight += assessment.weight;
+    }
+  }
+  return 100 - gradedWeight;
 };
 
-/**
- * Calculate the total weight of remaining components
- * @param components Array of grade components
- * @returns The total weight of remaining components (0-100)
- */
-export const calculateRemainingWeight = (components: GradeComponent[]): number => {
-  return components
-    .filter(component => !component.isCompleted)
-    .reduce((sum, component) => sum + component.weight, 0);
-};
-
-/**
- * Check if all components are completed
- * @param components Array of grade components
- * @returns True if all components are completed, false otherwise
- */
-export const isAllComponentsCompleted = (components: GradeComponent[]): boolean => {
-  return components.length > 0 && components.every(component => component.isCompleted);
-};
-
-/**
- * Calculate the required average score on remaining components to achieve target grade
- * @param components Array of grade components
- * @param targetGrade The target grade percentage (0-100)
- * @returns The required average score (0-100) or null if no remaining components
- */
-export const calculateRequiredAverage = (
-  components: GradeComponent[],
-  targetGrade: number
+export const calculateTargetGradeNeeded = (
+  course: Course,
+  targetGrade: number,
+  remainingWeight: number
 ): number | null => {
-  const completedComponents = components.filter(
-    component => component.isCompleted && component.score !== null
-  );
-  const remainingComponents = components.filter(component => !component.isCompleted);
-  
-  if (remainingComponents.length === 0) {
-    return null;
+  if (remainingWeight <= 0) {
+    return null; // No remaining assessments to influence grade
   }
-  
-  const totalWeight = components.reduce((sum, component) => sum + component.weight, 0);
-  const targetPoints = (targetGrade / 100) * totalWeight;
-  
-  const earnedPoints = completedComponents.reduce(
-    (sum, component) => sum + ((component.score! / component.maxScore) * component.weight),
-    0
-  );
-  
-  const remainingWeight = remainingComponents.reduce(
-    (sum, component) => sum + component.weight,
-    0
-  );
-  
-  const requiredPoints = targetPoints - earnedPoints;
-  
-  return remainingWeight > 0 ? (requiredPoints / remainingWeight) * 100 : null;
-};
 
-/**
- * Check if the target grade is achievable
- * @param components Array of grade components
- * @param targetGrade The target grade percentage (0-100)
- * @returns True if the target grade is achievable, false otherwise
- */
-export const isTargetAchievable = (
-  components: GradeComponent[],
-  targetGrade: number
-): boolean => {
-  const requiredAvg = calculateRequiredAverage(components, targetGrade);
-  
-  // If all components are completed, check if current grade meets target
-  if (requiredAvg === null) {
-    const currentGrade = calculateCurrentGrade(components);
-    return currentGrade !== null && currentGrade >= targetGrade;
-  }
-  
-  // Target is achievable if required average is <= 100%
-  return requiredAvg <= 100;
-};
-
-/**
- * Generate recommendations based on current grades and target
- * @param components Array of grade components
- * @param targetGrade The target grade percentage (0-100)
- * @returns Array of recommendation strings
- */
-export const generateRecommendations = (
-  components: GradeComponent[],
-  targetGrade: number
-): string[] => {
-  const recommendations: string[] = [];
-  const currentGrade = calculateCurrentGrade(components);
-  const requiredAvg = calculateRequiredAverage(components, targetGrade);
-  const achievable = isTargetAchievable(components, targetGrade);
-  
-  if (components.length === 0) {
-    recommendations.push('Add your first grade component to get started.');
-    return recommendations;
-  }
-  
+  const currentGrade = calculateCourseGrade(course);
   if (currentGrade === null) {
-    recommendations.push('Enter scores for completed components to see your current grade.');
-  } else if (isAllComponentsCompleted(components)) {
-    if (currentGrade >= targetGrade) {
-      recommendations.push(`Congratulations! You've achieved your target grade of ${targetGrade}%.`);
-    } else {
-      recommendations.push(`Your final grade (${currentGrade.toFixed(1)}%) is below your target of ${targetGrade}%.`);
-    }
-    return recommendations;
+    // If no current grade, need to get 100% on remaining to hit target
+    return targetGrade;
   }
-  
-  if (requiredAvg !== null) {
-    if (achievable) {
-      recommendations.push(
-        `You need to score an average of ${requiredAvg.toFixed(1)}% on remaining assessments to reach your target.`
-      );
-      
-      if (requiredAvg > 90) {
-        recommendations.push('This will be challenging. Consider adjusting your target or seeking additional help.');
-      } else if (requiredAvg < 50) {
-        recommendations.push('You\'re in a good position to exceed your target!');
-      }
-    } else {
-      recommendations.push('Your target grade is not mathematically achievable with the remaining assessments.');
-      recommendations.push('Consider adjusting your target to a more realistic goal.');
-    }
+
+  // current weighted grade = (currentGrade / 100) * (100 - remainingWeight)
+  // target weighted grade = (targetGrade / 100) * 100
+  // needed weighted grade = target weighted grade - current weighted grade
+  // needed grade = (needed weighted grade / remainingWeight) * 100
+
+  const currentWeightedSum = (currentGrade / 100) * (100 - remainingWeight);
+  const targetWeightedSum = (targetGrade / 100) * 100;
+
+  const neededWeightedSum = targetWeightedSum - currentWeightedSum;
+
+  if (neededWeightedSum < 0) {
+    return 0; // Already exceeded target or can't go below 0
   }
-  
-  const totalWeight = components.reduce((sum, component) => sum + component.weight, 0);
-  if (totalWeight < 100) {
-    recommendations.push(`Your components only add up to ${totalWeight}% of the total grade. Add the missing ${100 - totalWeight}%.`);
-  } else if (totalWeight > 100) {
-    recommendations.push(`Your components add up to ${totalWeight}%, which exceeds 100%. Please adjust the weights.`);
-  }
-  
-  return recommendations;
+
+  const gradeNeeded = (neededWeightedSum / remainingWeight) * 100;
+
+  return gradeNeeded;
 };

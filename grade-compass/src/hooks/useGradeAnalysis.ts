@@ -1,43 +1,34 @@
 import { useMemo } from 'react';
-import type { GradeComponent } from '../types/models';
-import { useGradeCalculator } from './useGradeCalculator';
-import { useTargetGradePredictor } from './useTargetGradePredictor';
+import { Course } from '../types/models';
+import { calculateCourseGrade, calculateRemainingWeight, calculateTargetGradeNeeded } from '../utils/gradeCalculator';
 
-/**
- * Combined hook for grade analysis that provides both calculation and prediction
- * @param components Array of grade components
- * @param targetGrade The target grade percentage (0-100)
- * @returns Combined object with all grade analysis data
- */
-export const useGradeAnalysis = (
-  components: GradeComponent[],
-  targetGrade: number
-) => {
-  const calculationResults = useGradeCalculator(components);
-  const predictionResults = useTargetGradePredictor(components, targetGrade);
-  
-  const letterGrade = useMemo(() => {
-    if (calculationResults.currentGrade === null) return 'N/A';
-    
-    const grade = calculationResults.currentGrade;
-    if (grade >= 97) return 'A+';
-    if (grade >= 93) return 'A';
-    if (grade >= 90) return 'A-';
-    if (grade >= 87) return 'B+';
-    if (grade >= 83) return 'B';
-    if (grade >= 80) return 'B-';
-    if (grade >= 77) return 'C+';
-    if (grade >= 73) return 'C';
-    if (grade >= 70) return 'C-';
-    if (grade >= 67) return 'D+';
-    if (grade >= 63) return 'D';
-    if (grade >= 60) return 'D-';
-    return 'F';
-  }, [calculationResults.currentGrade]);
-  
+interface GradeAnalysisResult {
+  currentGrade: number | null;
+  remainingWeight: number;
+  gradeNeededForTarget: (target: number) => number | null;
+}
+
+const useGradeAnalysis = (course: Course | undefined): GradeAnalysisResult => {
+  const currentGrade = useMemo(() => {
+    if (!course) return null;
+    return calculateCourseGrade(course);
+  }, [course]);
+
+  const remainingWeight = useMemo(() => {
+    if (!course) return 100;
+    return calculateRemainingWeight(course);
+  }, [course]);
+
+  const gradeNeededForTarget = (target: number): number | null => {
+    if (!course) return null;
+    return calculateTargetGradeNeeded(course, target, remainingWeight);
+  };
+
   return {
-    ...calculationResults,
-    ...predictionResults,
-    letterGrade,
+    currentGrade,
+    remainingWeight,
+    gradeNeededForTarget,
   };
 };
+
+export default useGradeAnalysis;
